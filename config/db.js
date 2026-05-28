@@ -10,24 +10,34 @@ const withDatabaseName = (uri) => {
   return parsed.toString();
 };
 
-const connectDB = async () => {
-  try {
-    const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
+const connectDB = async (retryCount = 5, delayMs = 5000) => {
+  const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
 
-    if (!mongoUri) {
-      throw new Error('Missing MONGODB_URI or MONGO_URI environment variable');
-    }
-
-    mongoose.set('strictQuery', true);
-
-    const conn = await mongoose.connect(withDatabaseName(mongoUri), {
-      serverSelectionTimeoutMS: 10000,
-      maxPoolSize: 10,
-    });
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-  } catch (error) {
-    console.error(`MongoDB Connection Error: ${error.message}`);
+  if (!mongoUri) {
+    console.error('CRITICAL: Missing MONGODB_URI or MONGO_URI environment variable');
     process.exit(1);
+  }
+
+  mongoose.set('strictQuery', true);
+
+  for (let attempt = 1; attempt <= retryCount; attempt++) {
+    try {
+      const conn = await mongoose.connect(withDatabaseName(mongoUri), {
+        serverSelectionTimeoutMS: 10000,
+        maxPoolSize: 10,
+      });
+      console.log(`MongoDB Connected: ${conn.connection.host}`);
+      return;
+    } catch (error) {
+      console.error(`MongoDB Connection Attempt ${attempt}/${retryCount} Failed: ${error.message}`);
+      if (attempt === retryCount) {
+        console.error('CRITICAL: MongoDB connection failed after maximum retries. Exiting.');
+        process.exit(1);
+      }
+      console.log(`Retrying database connection in ${delayMs / 1000}s...`);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      delayMs = delayMs * 1.5;
+    }
   }
 };
 

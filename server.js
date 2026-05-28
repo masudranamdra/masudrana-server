@@ -2,6 +2,8 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import connectDB from './config/db.js';
 import { errorHandler } from './middleware/errorMiddleware.js';
 
@@ -24,6 +26,22 @@ connectDB();
 
 const app = express();
 
+// Set security HTTP headers
+app.use(helmet());
+
+// Basic rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 300, // Limit each IP to 300 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many requests from this IP, please try again later.',
+  },
+});
+app.use('/api', limiter);
+
 // Body parser
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -40,7 +58,7 @@ const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:3000,http://
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
         callback(null, true);
         return;
       }
