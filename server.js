@@ -50,7 +50,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Enable CORS
-const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:3000,http://localhost:3001')
+const allowedOrigins = (process.env.CLIENT_URL || 'https://masuddev01.vercel.app,http://localhost:3000,http://localhost:3001')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
