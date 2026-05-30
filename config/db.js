@@ -20,6 +20,11 @@ const connectDB = async (retryCount = 5, delayMs = 5000) => {
 
   mongoose.set('strictQuery', true);
 
+  if (mongoose.connection.readyState >= 1) {
+    console.log('MongoDB: Reusing existing database connection.');
+    return;
+  }
+
   for (let attempt = 1; attempt <= retryCount; attempt++) {
     try {
       const conn = await mongoose.connect(withDatabaseName(mongoUri), {
