@@ -94,25 +94,34 @@ app.get('/', (req, res) => {
 // Centralized error handler
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
+// Expose Express app for Vercel serverless environment
+export default app;
 
-const server = app.listen(PORT, () => {
-  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-});
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 5000;
 
-server.on('error', (error) => {
-  if (error.code === 'EADDRINUSE') {
-    console.error(`Port ${PORT} is already in use. Stop the existing server or set a different PORT.`);
+  const server = app.listen(PORT, () => {
+    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  });
+
+  server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+      console.error(`Port ${PORT} is already in use. Stop the existing server or set a different PORT.`);
+      process.exit(1);
+    }
+
+    console.error(error);
     process.exit(1);
-  }
+  });
 
-  console.error(error);
-  process.exit(1);
-});
-
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (err, promise) => {
-  console.error(`Unhandled Rejection: ${err.message}`);
-  // Close server & exit process
-  server.close(() => process.exit(1));
-});
+  // Handle unhandled promise rejections
+  process.on('unhandledRejection', (err, promise) => {
+    console.error(`Unhandled Rejection: ${err.message}`);
+    // Close server & exit process
+    server.close(() => process.exit(1));
+  });
+} else {
+  process.on('unhandledRejection', (err, promise) => {
+    console.error(`Unhandled Rejection on Vercel: ${err.message}`);
+  });
+}

@@ -14,8 +14,7 @@ const connectDB = async (retryCount = 5, delayMs = 5000) => {
   const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
 
   if (!mongoUri) {
-    console.error('CRITICAL: Missing MONGODB_URI or MONGO_URI environment variable');
-    process.exit(1);
+    throw new Error('CRITICAL: Missing MONGODB_URI or MONGO_URI environment variable');
   }
 
   mongoose.set('strictQuery', true);
@@ -36,8 +35,7 @@ const connectDB = async (retryCount = 5, delayMs = 5000) => {
     } catch (error) {
       console.error(`MongoDB Connection Attempt ${attempt}/${retryCount} Failed: ${error.message}`);
       if (attempt === retryCount) {
-        console.error('CRITICAL: MongoDB connection failed after maximum retries. Exiting.');
-        process.exit(1);
+        throw new Error('CRITICAL: MongoDB connection failed after maximum retries.');
       }
       console.log(`Retrying database connection in ${delayMs / 1000}s...`);
       await new Promise((resolve) => setTimeout(resolve, delayMs));
